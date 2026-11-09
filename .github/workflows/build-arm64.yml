@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
@@ -32,9 +35,22 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install dependencies
+      - name: Install dependencies (retry transient download failures)
         working-directory: genoffice
-        run: npm ci
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "npm ci attempt ${attempt}/3"
+            if npm ci; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Dependency install failed; retrying in 20 seconds..."
+              sleep 20
+            fi
+          done
+          echo "npm ci failed after 3 attempts"
+          exit 1
 
       - name: Build Linux ARM64 packages
         working-directory: genoffice
