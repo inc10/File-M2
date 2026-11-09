@@ -1,0 +1,53 @@
+name: Build GenOffice Linux ARM64
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-arm64.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - name: Checkout GenOffice source
+        uses: actions/checkout@v4
+        with:
+          repository: genspark-ai/genoffice
+          ref: main
+          path: genoffice
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: genoffice/package-lock.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+          # Rust sidecar is built for the native ARM64 runner.
+
+      - name: Install dependencies
+        working-directory: genoffice
+        run: npm ci
+
+      - name: Build Linux ARM64 packages
+        working-directory: genoffice
+        run: npm run dist:linux --workspace=@genoffice/shell -- --arm64
+
+      - name: Upload Linux ARM64 packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: genoffice-linux-arm64
+          path: |
+            genoffice/apps/shell/dist/*.deb
+            genoffice/apps/shell/dist/*.AppImage
+            genoffice/apps/shell/dist/*.rpm
+          if-no-files-found: error
+          retention-days: 14
