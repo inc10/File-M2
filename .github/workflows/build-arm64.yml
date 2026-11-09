@@ -31,7 +31,6 @@ jobs:
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-          # Rust sidecar is built for the native ARM64 runner.
 
       - name: Install dependencies
         working-directory: genoffice
@@ -39,15 +38,15 @@ jobs:
 
       - name: Build Linux ARM64 packages
         working-directory: genoffice
-        run: npm run dist:linux --workspace=@genoffice/shell -- --arm64
+        run: |
+          npm run notices
+          npm run build:all
+          npm run dist:linux -w @genoffice/shell -- --arm64
 
       - name: Upload Linux ARM64 packages
         uses: actions/upload-artifact@v4
         with:
           name: genoffice-linux-arm64
-          path: |
-            genoffice/apps/shell/dist/*.deb
-            genoffice/apps/shell/dist/*.AppImage
-            genoffice/apps/shell/dist/*.rpm
+          path: genoffice/apps/shell/dist/**/*
           if-no-files-found: error
           retention-days: 14
